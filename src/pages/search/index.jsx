@@ -4,13 +4,13 @@ import styles from './style.module.css'
 
 export default function Search() {
   // stores search results
-  const [bookSearchResults, setBookSearchResults] = useState()
+  const [bookSearchResults, setBookSearchResults] = useState();
   // stores value of input field
-  const [query, setQuery] = useState("")
+  const [query, setQuery] = useState("");
   // compare to query to prevent repeat API calls
-  const [previousQuery, setPreviousQuery] = useState()
+  const [previousQuery, setPreviousQuery] = useState("");
   // used to prevent rage clicks on form submits
-  const [fetching, setFetching] = useState(false)
+  const [fetching, setFetching] = useState(false);
 
   // TODO: Write a submit handler for the form that fetches data from:
   // https://www.googleapis.com/books/v1/volumes?langRestrict=en&maxResults=16&q=YOUR_QUERY
@@ -19,6 +19,22 @@ export default function Search() {
   // fetch has not finished
   // the query is unchanged
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!fetching && query.trim() !== "" && query !== previousQuery) {
+      setFetching(true);
+      setPreviousQuery(query);
+      try {
+        const response = await fetch(`https://www.googleapis.com/books/v1/volumes?langRestrict=en&maxResults=16&q=${query}`);
+        const data = await response.json();
+        setBookSearchResults(data.items);
+      } catch (error) {
+        console.log(error);
+      }
+      setFetching(false);
+    }
+  };
+
   const inputRef = useRef()
   const inputDivRef = useRef()
 
@@ -26,7 +42,7 @@ export default function Search() {
     <main className={styles.search}>
       <h1>Book Search</h1>
       {/* TODO: add an onSubmit handler */}
-      <form className={styles.form}>
+      <form className={styles.form} onSubmit={handleSubmit}>
         <label htmlFor="book-search">Search by author, title, and/or keywords:</label>
         <div ref={inputDivRef}>
           {/* TODO: add value and onChange props to the input element based on query/setQuery */}
@@ -35,6 +51,8 @@ export default function Search() {
             type="text"
             name="book-search"
             id="book-search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             />
           <button type="submit">Submit</button>
         </div>
@@ -47,7 +65,15 @@ export default function Search() {
         ? <Loading />
         : bookSearchResults?.length
         ? <div className={styles.bookList}>
-            {/* TODO: render BookPreview components for each search result here based on bookSearchResults */}
+      {/*TODO:render BookPreview components for each search result here based on bookSearchResults */}
+           {bookSearchResults.map((book) => (
+            <BookPreview 
+            key={book.id}
+            title={book.volumeInfo.title}
+            authors={book.volumeInfo.authors}
+            thumbnail={book.volumeInfo.imageLinks?.thumbnail}
+            previewLink={book.volumeInfo.previewLink} />
+          ))}
           </div>
         : <NoResults
           {...{inputRef, inputDivRef, previousQuery}}
